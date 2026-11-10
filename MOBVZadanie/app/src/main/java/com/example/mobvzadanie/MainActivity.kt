@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -33,12 +34,21 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.mobvzadanie.quiz.OfflineFirstQuizRepository
+import com.example.mobvzadanie.quiz.QuizApi
+import com.example.mobvzadanie.quiz.QuizCategoryViewModel
+import com.example.mobvzadanie.quiz.QuizDatabase
 import com.example.mobvzadanie.ui.theme.MOBVZadanieTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val viewModel: QuizCategoryViewModel by viewModels {
+            QuizCategoryViewModel.provideFactory(this)
+        }
+
         setContent {
             MOBVZadanieTheme {
                 val context = LocalContext.current
@@ -48,6 +58,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.padding(innerPadding),
                         userAccount,
                         context,
+                        viewModel
                     )
                 }
             }
