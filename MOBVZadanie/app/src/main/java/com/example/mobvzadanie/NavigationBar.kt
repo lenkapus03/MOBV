@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -27,6 +28,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.mobvzadanie.quiz.QuizCategoryViewModel
 import com.example.mobvzadanie.screens.AccountScreen
+import com.example.mobvzadanie.screens.HistoryScreen
 import com.example.mobvzadanie.screens.HomeScreen
 import com.example.mobvzadanie.screens.QuizScreen
 import com.example.mobvzadanie.screens.QuizSettingsScreen
@@ -36,13 +38,15 @@ enum class Destination(
     val label: String,
     val icon: ImageVector,
     val contentDescription: String,
-    val isInNavBar: Boolean = false
+    val isInNavBar: Boolean = false,
+    val showBottomBar: Boolean = isInNavBar
 ) {
-    HOME("home", "Domov", Icons.Default.Home, "Domov", true),
-    ACCOUNT("account", "Konto", Icons.Default.AccountCircle, "Konto", true),
+    HOME("home", "Domov", Icons.Default.Home, "Domov", true, true),
+    ACCOUNT("account", "Konto", Icons.Default.AccountCircle, "Konto", true, true),
 
-    QUIZ_SETTINGS("quiz_settings", "Nastavenie kvízu", Icons.Default.Home, "Nastavenie kvízu"),
-    QUIZ("quiz", "Kvíz", Icons.Default.Home, "Kvíz"),
+    QUIZ_SETTINGS("quiz_settings", "Nastavenie kvízu", Icons.Default.Home, "Nastavenie kvízu", false, false),
+    QUIZ("quiz", "Kvíz", Icons.Default.Home, "Kvíz", false, false),
+    HISTORY("history", "História", Icons.Default.Home, "História kvízov", false, true),
 }
 
 @Composable
@@ -56,7 +60,6 @@ fun NavigationBar(
     val savedName by userAccount.getName().collectAsState(initial = "")
     val accountCreated = savedName.isNotBlank()
     val startDestination = if (accountCreated) Destination.HOME else Destination.ACCOUNT
-    var selectedDestination by rememberSaveable { mutableIntStateOf(startDestination.ordinal) }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
@@ -64,15 +67,19 @@ fun NavigationBar(
         modifier = modifier,
         bottomBar = {
             val currentDestination = Destination.entries.find { it.route == currentRoute }
-            if (currentDestination?.isInNavBar == true) {
+            if (currentDestination?.showBottomBar == true) {
                 NavigationBar(windowInsets = NavigationBarDefaults.windowInsets) {
                     val navigationBarItems = Destination.entries.filter { e -> e.isInNavBar }
-                    navigationBarItems.forEachIndexed { index, destination ->
+                    navigationBarItems.forEach { destination ->
                         NavigationBarItem(
-                            selected = selectedDestination == index,
+                            selected = currentRoute == destination.route,
                             onClick = {
-                                navController.navigate(route = destination.route)
-                                selectedDestination = index
+                                if (currentRoute != destination.route) {
+                                    navController.navigate(route = destination.route) {
+                                        popUpTo(Destination.HOME.route)
+                                        launchSingleTop = true
+                                    }
+                                }
                             },
                             icon = {
                                 Icon(
@@ -121,6 +128,9 @@ fun AppNavHost(
                             modifier.padding(16.dp),
                             onNavigateToQuizSettingsScreen = {
                                 navController.navigate(Destination.QUIZ_SETTINGS.route)
+                            },
+                            onNavigateToHistoryScreen = {
+                                navController.navigate(Destination.HISTORY.route)
                             }
                         )
                     Destination.ACCOUNT ->
@@ -147,6 +157,13 @@ fun AppNavHost(
                             },
                             viewModel = viewModel
                         )
+
+                    Destination.HISTORY -> {
+                        HistoryScreen(
+                            modifier = modifier.padding(16.dp),
+                            viewModel = viewModel
+                        )
+                    }
                 }
             }
         }

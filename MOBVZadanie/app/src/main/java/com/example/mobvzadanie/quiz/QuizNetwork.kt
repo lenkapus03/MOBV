@@ -26,6 +26,22 @@ data class TokenResponseDto(
     @SerialName("response_message") val responseMessage: String,
     val token: String? = null
 )
+
+@Serializable
+data class QuizQuestionDto(
+    val type: String = "",
+    val difficulty: String = "",
+    val category: String = "",
+    val question: String = "",
+    @SerialName("correct_answer") val correctAnswer: String = "",
+    @SerialName("incorrect_answers") val incorrectAnswers: List<String> = emptyList()
+)
+
+@Serializable
+data class QuizQuestionsResponseDto(
+    @SerialName("response_code") val responseCode: Int = 0,
+    val results: List<QuizQuestionDto> = emptyList()
+)
 interface QuizApiService {
     @GET("api_category.php")
     suspend fun getQuizCategories(): QuizCategoriesResponseDto
@@ -38,14 +54,14 @@ interface QuizApiService {
         @Query("token") token: String
     ): TokenResponseDto
 
-//    @GET("api.php")
-//    suspend fun getQuestions(
-//        @Query("amount") amount: Int = 10,
-//        @Query("category") category: Int? = null,
-//        @Query("difficulty") difficulty: String? = null,
-//        @Query("type") type: String? = null,
-//        @Query("token") token: String? = null
-//    ): QuizQuestionsResponseDto
+    @GET("api.php")
+    suspend fun getQuestions(
+        @Query("amount") amount: Int = 10,
+        @Query("category") category: Int? = null,
+        @Query("difficulty") difficulty: String? = null,
+        @Query("type") type: String? = null,
+        @Query("token") token: String? = null
+    ): QuizQuestionsResponseDto
 }
 
 private const val BASE_URL = "https://opentdb.com/"

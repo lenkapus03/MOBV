@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.mobvzadanie.UserAccount
 import com.example.mobvzadanie.model.QuizOption
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +25,13 @@ class QuizCategoryViewModel(private val repository: QuizRepository) : ViewModel(
 
     private val _tokenState = MutableStateFlow<String?>(null)
     val tokenState: StateFlow<String?> = _tokenState.asStateFlow()
+
+    val allQuizResults: StateFlow<List<QuizResultEntity>> = repository.getAllQuizResultsStream()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     val uiState: StateFlow<QuizUiState> = combine(
         repository.getQuizCategoriesStream(),
@@ -76,6 +84,10 @@ class QuizCategoryViewModel(private val repository: QuizRepository) : ViewModel(
                 _error.value = "Chyba načítania tokenu: ${e.message}"
             }
         }
+    }
+
+    fun getQuizResultWithHistory(resultId: Long): Flow<QuizResultWithHistory> {
+        return repository.getQuizResultWithHistory(resultId)
     }
 
     companion object {
