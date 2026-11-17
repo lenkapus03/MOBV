@@ -4,9 +4,12 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.mobvzadanie.UserAccount
+import com.example.mobvzadanie.model.QuizOption
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -15,6 +18,12 @@ class QuizCategoryViewModel(private val repository: QuizRepository) : ViewModel(
 
     private val _isRefreshing = MutableStateFlow(false)
     private val _error = MutableStateFlow<String?>(null)
+
+    private val _selectedAnswers = MutableStateFlow<Map<Int, QuizOption>>(emptyMap())
+    val selectedAnswers: StateFlow<Map<Int, QuizOption>> = _selectedAnswers.asStateFlow()
+
+    private val _tokenState = MutableStateFlow<String?>(null)
+    val tokenState: StateFlow<String?> = _tokenState.asStateFlow()
 
     val uiState: StateFlow<QuizUiState> = combine(
         repository.getQuizCategoriesStream(),
@@ -54,13 +63,33 @@ class QuizCategoryViewModel(private val repository: QuizRepository) : ViewModel(
         }
     }
 
+    fun saveSelectedAnswers(answers: Map<Int, QuizOption>) {
+        _selectedAnswers.value = answers.toMap()
+    }
+
+    fun loadToken() {
+        viewModelScope.launch {
+            try {
+                val token = repository.getOrFetchToken()
+                _tokenState.value = token
+            } catch (e: Exception) {
+                _error.value = "Chyba načítania tokenu: ${e.message}"
+            }
+        }
+    }
+
     companion object {
         fun provideFactory(context: Context): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     val database = QuizDatabase.getDatabase(context)
-                    val repository = OfflineFirstQuizRepository(database.quizDao, QuizApi.retrofitService)
+                    val userAccount = UserAccount(context)
+                    val repository = OfflineFirstQuizRepository(
+                        database.quizDao,
+                        QuizApi.retrofitService,
+                        userAccount = userAccount
+                    )
                     return QuizCategoryViewModel(repository) as T
                 }
             }

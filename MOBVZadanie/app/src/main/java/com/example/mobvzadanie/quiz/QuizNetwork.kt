@@ -7,6 +7,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.http.GET
+import retrofit2.http.Query
 
 @Serializable
 data class QuizCategoriesResponseDto(
@@ -19,9 +20,32 @@ data class QuizCategoryDto(
     val name: String
 )
 
+@Serializable
+data class TokenResponseDto(
+    @SerialName("response_code") val responseCode: Int,
+    @SerialName("response_message") val responseMessage: String,
+    val token: String? = null
+)
 interface QuizApiService {
     @GET("api_category.php")
     suspend fun getQuizCategories(): QuizCategoriesResponseDto
+
+    @GET("api_token.php?command=request")
+    suspend fun requestToken(): TokenResponseDto
+
+    @GET("api_token.php?command=reset")
+    suspend fun resetToken(
+        @Query("token") token: String
+    ): TokenResponseDto
+
+//    @GET("api.php")
+//    suspend fun getQuestions(
+//        @Query("amount") amount: Int = 10,
+//        @Query("category") category: Int? = null,
+//        @Query("difficulty") difficulty: String? = null,
+//        @Query("type") type: String? = null,
+//        @Query("token") token: String? = null
+//    ): QuizQuestionsResponseDto
 }
 
 private const val BASE_URL = "https://opentdb.com/"

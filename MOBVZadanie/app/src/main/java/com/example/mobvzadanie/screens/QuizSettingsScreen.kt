@@ -2,7 +2,6 @@ package com.example.mobvzadanie.screens
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,25 +23,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.mobvzadanie.quiz.QuizCategoryViewModel
+import com.example.mobvzadanie.model.QuizOption
+import com.example.mobvzadanie.model.QuizSettingsData
 import com.example.mobvzadanie.quiz.QuizUiState
 import kotlinx.coroutines.launch
 
-data class QuizSettingStep(
-    val question: String,
-    val options: List<String>,
-    val answer: String? = null
-)
-
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun QuizSettingsScreen(
     modifier: Modifier,
@@ -53,20 +46,16 @@ fun QuizSettingsScreen(
 
     val categories = when (val state = uiState) {
         is QuizUiState.Success -> if (state.categories.isNotEmpty()) {
-            state.categories.map { it.name }
+            state.categories.map { QuizOption(text = it.name, urlValue = it.id.toString()) }
         } else {
-            listOf("Žiadne kategórie nie sú k dispozícii")
+            listOf(QuizOption("Žiadne kategórie nie sú k dispozícii"))
         }
-        is QuizUiState.Loading -> listOf("Načítavam kategórie...")
-        is QuizUiState.Error -> listOf("Chyba načítania (${state.message})")
+        is QuizUiState.Loading -> listOf(QuizOption("Načítavam kategórie..."))
+        is QuizUiState.Error -> listOf(QuizOption("Chyba načítania (${state.message})"))
     }
 
-    val steps = listOf(
-        QuizSettingStep("Vyberte si kategóriu otázok", categories),
-        QuizSettingStep("Vyberte si obtiažnosť", listOf("Všetky", "Ľahká", "Stredná", "Ťažká")),
-        QuizSettingStep("Vyberte si typ otázok", listOf("Viacero možností", "Pravda / Nepravda")),
-        QuizSettingStep("Vyberte si režim kvízu", listOf("Klasický kvíz", "Maratón"))
-    )
+    val steps = remember(categories) { QuizSettingsData.getQuizSteps(categories) }
+    val selectedAnswers = remember { mutableStateMapOf<Int, QuizOption>() }
 
     val pagerState = rememberPagerState(pageCount = { steps.size })
     val coroutineScope = rememberCoroutineScope()
@@ -79,7 +68,7 @@ fun QuizSettingsScreen(
         val currentStep = steps[pageIndex]
         val question = currentStep.question
         val options = currentStep.options
-        var selectedAnswer by remember(pageIndex) { mutableStateOf(currentStep.answer) }
+        val selectedAnswer = selectedAnswers[pageIndex]
 
         Box(
             modifier = Modifier
@@ -113,19 +102,19 @@ fun QuizSettingsScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { selectedAnswer = option }
+                            .clickable { selectedAnswers[pageIndex] = option }
                             .padding(vertical = 4.dp, horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Start
                     ) {
                         RadioButton(
                             selected = selectedAnswer == option,
-                            onClick = { selectedAnswer = option }
+                            onClick = { selectedAnswers[pageIndex] = option }
                         )
 
                         Spacer(modifier = Modifier.width(8.dp))
 
-                        Text(text = option)
+                        Text(text = option.text)
                     }
                 }
             }
@@ -133,6 +122,7 @@ fun QuizSettingsScreen(
             Button(
                 onClick = {
                     if (pageIndex == steps.size - 1) {
+                        viewModel.saveSelectedAnswers(selectedAnswers)
                         onNavigateToHomeScreen()
                     } else {
                         coroutineScope.launch {

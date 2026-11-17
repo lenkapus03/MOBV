@@ -28,6 +28,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.mobvzadanie.quiz.QuizCategoryViewModel
 import com.example.mobvzadanie.screens.AccountScreen
 import com.example.mobvzadanie.screens.HomeScreen
+import com.example.mobvzadanie.screens.QuizScreen
 import com.example.mobvzadanie.screens.QuizSettingsScreen
 
 enum class Destination(
@@ -41,6 +42,7 @@ enum class Destination(
     ACCOUNT("account", "Konto", Icons.Default.AccountCircle, "Konto", true),
 
     QUIZ_SETTINGS("quiz_settings", "Nastavenie kvízu", Icons.Default.Home, "Nastavenie kvízu"),
+    QUIZ("quiz", "Kvíz", Icons.Default.Home, "Kvíz"),
 }
 
 @Composable
@@ -64,7 +66,7 @@ fun NavigationBar(
             val currentDestination = Destination.entries.find { it.route == currentRoute }
             if (currentDestination?.isInNavBar == true) {
                 NavigationBar(windowInsets = NavigationBarDefaults.windowInsets) {
-                    val navigationBarItems = Destination.entries.filter{e -> e.isInNavBar}
+                    val navigationBarItems = Destination.entries.filter { e -> e.isInNavBar }
                     navigationBarItems.forEachIndexed { index, destination ->
                         NavigationBarItem(
                             selected = selectedDestination == index,
@@ -93,7 +95,8 @@ fun NavigationBar(
             modifier = Modifier.padding(contentPadding),
             userAccount,
             context,
-            viewModel)
+            viewModel
+        )
     }
 }
 
@@ -118,18 +121,32 @@ fun AppNavHost(
                             modifier.padding(16.dp),
                             onNavigateToQuizSettingsScreen = {
                                 navController.navigate(Destination.QUIZ_SETTINGS.route)
-                            })
+                            }
+                        )
                     Destination.ACCOUNT ->
-                        AccountScreen(modifier.padding(16.dp),
+                        AccountScreen(
+                            modifier.padding(16.dp),
                             userAccount,
                             context
                         )
                     Destination.QUIZ_SETTINGS ->
-                        QuizSettingsScreen(modifier.padding(16.dp),
+                        QuizSettingsScreen(
+                            modifier = modifier.padding(16.dp),
                             onNavigateToHomeScreen = {
-                                navController.navigate(Destination.HOME.route)
+                                navController.navigate(Destination.QUIZ.route)
                             },
-                            viewModel = viewModel)
+                            viewModel = viewModel
+                        )
+                    Destination.QUIZ ->
+                        QuizScreen(
+                            modifier = modifier.padding(16.dp),
+                            onNavigateToHomeScreen = {
+                                navController.navigate(Destination.HOME.route) {
+                                    popUpTo(Destination.HOME.route) { inclusive = true }
+                                }
+                            },
+                            viewModel = viewModel
+                        )
                 }
             }
         }
